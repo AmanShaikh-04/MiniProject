@@ -1,11 +1,37 @@
-export default function HelloWorld() {
+import React from "react";
+import Navbar from "./components/navbar";
+import Hero from "./components/hero";
+import PastEvents from "./components/past-events";
+import UpcomingEvents from "./components/upcoming-events";
+import AboutUs from "./components/about-us";
+import Gallery from "./components/gallery";
+import Testimonial from "./components/testimonial";
+import FAQ from "./components/faq";
+import ContactUs from "./components/contact-us";
+import Footer from "./components/footer";
+
+const HomePage = () => {
   return (
-    <div className="flex justify-center items-center h-screen bg-gradient-to-r from-purple-600 via-blue-500 to-green-500">
-      <div className="bg-white/10 backdrop-blur-lg p-10 rounded-2xl shadow-2xl border border-white/20">
-        <h1 className="text-6xl font-extrabold text-white text-center animate-pulse drop-shadow-lg">
-          Hello, World! 🌎✨...
-        </h1>
+    <main className="flex flex-col min-h-screen">
+      {/* Navbar */}
+      <Navbar />
+
+      {/* Main Content */}
+      <div className="flex-grow">
+        <Hero />
+        <AboutUs />
+        <UpcomingEvents />
+        <PastEvents />
+        <Gallery />
+        <Testimonial />
+        <FAQ />
+        {/* <ContactUs /> */}
       </div>
-    </div>
+
+      {/* Footer */}
+      <Footer />
+    </main>
   );
-}
+};
+
+export default HomePage;

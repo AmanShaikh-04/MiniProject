@@ -1,6 +1,20 @@
 @import "tailwindcss";
 
-:root {
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Poppins:wght@700&family=Roboto:wght@547&display=swap");
+
+@theme {
+  --color-text: #030307;
+  --color-background: #f2f1f9;
+  --color-primary: #948fff;
+  --color-secondary: #dedcff;
+  --color-accent: #dedcff;
+
+  --font-body: Roboto, "serif";
+  --font-heading: Montserrat, "serif";
+  --font-button: Poppins, "serif";
+}
+
+/* :root {
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -41,4 +55,4 @@ a {
   html {
     color-scheme: dark;
   }
-}
+} */
