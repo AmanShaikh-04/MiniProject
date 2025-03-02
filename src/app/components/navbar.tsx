@@ -17,9 +17,13 @@ const Navbar = () => {
         {/* Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
-            <div className="border border-gray-300 rounded-md p-2">
-              <span className="font-bold text-gray-700">LOGO</span>
-            </div>
+            <Image
+              src="/assets/aiktclogo1.png"
+              alt="AIKTC Logo"
+              width={50}
+              height={50}
+              className="rounded-md"
+            />
           </Link>
         </div>
 

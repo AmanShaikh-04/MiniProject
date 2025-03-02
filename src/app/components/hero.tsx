@@ -4,76 +4,66 @@ import Link from "next/link";
 
 const HeroSection = () => {
   return (
-    <section className="bg-background py-8">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row items-start">
-          {/* Left Section - Title and About */}
-          <div className="w-full md:w-1/2 text-center">
-            <h1 className=" text-7xl font font-heading my-15">
-              Student Committee Management System
-            </h1>
-
-            {/* About Us Box */}
-
-            <h2 className=" text-2xl font-semibold font-body mb-12 mx-6">
-              Student Committee Management System is a streamlined platform for
-              student enrollment and event registration, offering an intuitive
-              interface for seamless management, tracking, and engagement.
-            </h2>
-
-            {/* Login Button */}
-            <div className="flex justify-center">
-              <Link
-                href="/login"
-                className="inline-block bg-primary border border-gray-300 rounded px-8 py-2 text-gray-700 font-button font-bold
-               transition-transform duration-300 ease-in-out 
-               hover:scale-105 hover:shadow-lg hover:text-white active:scale-95"
-              >
-                Login
-              </Link>
-            </div>
-          </div>
-
-          {/* Right Section - Image Placeholder */}
-          <div className="w-full md:w-1/2">
-            <div className="rounded-lg flex items-center justify-center">
-              <Image
-                src="/assets/aiktclogo1.png"
-                alt="AIKTC Logo"
-                width={500}
-                height={500}
-                className="h-full object-contain"
-              />
-            </div>
+    <section className="bg-background py-16 flex flex-col items-center">
+      <div className="container mx-auto px-6 lg:px-12 grid md:grid-cols-2 items-center gap-12">
+        {/* Left Section - Title and About */}
+        <div className="text-center px-9 flex flex-col items-center pl-6 md:pl-10">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+            Student Committee Management System
+          </h1>
+          <p className="text-lg text-muted-foreground mt-6 max-w-lg text-center">
+            A streamlined platform for student enrollment and event
+            registration, offering an intuitive interface for seamless
+            management, tracking, and engagement.
+          </p>
+          {/* Centered Login Button */}
+          <div className="mt-8 flex justify-center w-full">
+            <Link
+              href="/login"
+              className="bg-primary text-white px-8 py-3 rounded-lg shadow-md 
+              transition-all duration-300 hover:bg-opacity-90 hover:scale-105 active:scale-95"
+            >
+              LOGIN
+            </Link>
           </div>
         </div>
 
-        {/* Schools */}
+        {/* Right Section - Image Placeholder */}
+        <div className="flex justify-center">
+          <Image
+            src="/assets/aiktclogo1.png"
+            alt="AIKTC Logo"
+            width={350}
+            height={350}
+            className="max-w-full h-auto object-contain"
+          />
+        </div>
+      </div>
 
-        <div className="bg-accent rounded-4xl w-full mt-20">
-          <div className="rounded-lg flex justify-evenly p-5 h-38 ">
-            <Image
-              src="/assets/School-of-Arch.png"
-              alt="AIKTC Logo"
-              width={300}
-              height={100}
-              className="h-full object-contain"
-            />
-            <Image
-              src="/assets/School-of-Engg-logo.png"
-              alt="AIKTC Logo"
-              width={300}
-              height={100}
-              className="h-full object-contain"
-            />
-            <Image
-              src="/assets/School-Of-Pharm.png"
-              alt="AIKTC Logo"
-              width={300}
-              height={100}
-              className="h-full object-contain"
-            />
-          </div>
+      {/* Schools */}
+      <div className="bg-accent rounded-4xl w-full mt-10 py-5 px-6">
+        <div className="rounded-lg flex justify-between items-center">
+          <Image
+            src="/assets/School-of-Arch.png"
+            alt="School of Architecture"
+            width={280}
+            height={100}
+            className="h-20 object-contain"
+          />
+          <Image
+            src="/assets/School-of-Engg-logo.png"
+            alt="School of Engineering & Technology"
+            width={280}
+            height={100}
+            className="h-20 object-contain"
+          />
+          <Image
+            src="/assets/School-Of-Pharm.png"
+            alt="School of Pharmacy"
+            width={280}
+            height={100}
+            className="h-20 object-contain"
+          />
         </div>
       </div>
     </section>
