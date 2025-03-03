@@ -48,7 +48,7 @@ const PastEvents = () => {
             {/* Content Card with Circle Overlap */}
             <div
               className="w-full text-center p-6 rounded-lg min-h-[250px] flex flex-col justify-center relative"
-              style={{ backgroundColor: "#dedcff" }}
+              style={{ backgroundColor: "#BFDBFE" }}
             >
               <h3 className="font-medium text-[#030307] mb-2">{event.title}</h3>
               <p className="text-sm text-[#030307] mb-3">{event.description}</p>

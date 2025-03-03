@@ -20,7 +20,7 @@ const HeroSection = () => {
           <div className="mt-8 flex justify-center w-full">
             <Link
               href="/login"
-              className="bg-primary text-white px-8 py-3 rounded-lg shadow-md 
+              className="bg-blue-500 text-white px-8 py-3 rounded-lg shadow-md 
               transition-all duration-300 hover:bg-opacity-90 hover:scale-105 active:scale-95"
             >
               LOGIN
@@ -41,7 +41,7 @@ const HeroSection = () => {
       </div>
 
       {/* Schools */}
-      <div className="bg-accent rounded-4xl w-full mt-10 py-5 px-6">
+      <div className="bg-violet-200 rounded-4xl w-full mt-10 py-5 px-6">
         <div className="rounded-lg flex justify-between items-center">
           <Image
             src="/assets/School-of-Arch.png"
