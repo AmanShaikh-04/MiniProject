@@ -12,41 +12,36 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-accent shadow-md py-4">
+    <nav className="bg-violet-300 shadow-md py-4">
       <div className="container mx-auto px-4 flex justify-between items-center">
         {/* Logo */}
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/assets/aiktclogo1.png"
-              alt="AIKTC Logo"
-              width={50}
-              height={50}
-              className="rounded-md"
-            />
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/assets/logo.png"
+            alt="AIKTC Logo"
+            width={50}
+            height={50}
+            className="rounded-md ml-6 cursor-pointer transition-transform duration-300 hover:scale-105"
+          />
+        </Link>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex space-x-6">
-          <Link href="/" className="text-gray-700 hover:text-gray-900">
-            Home
-          </Link>
-          <Link href="/about-us" className="text-gray-700 hover:text-gray-900">
-            About Us
-          </Link>
-          <Link href="/events" className="text-gray-700 hover:text-gray-900">
-            Events
-          </Link>
-          <Link href="/login" className="text-gray-700 hover:text-gray-900">
-            Login
-          </Link>
-          <Link
-            href="/contact-us"
-            className="text-gray-700 hover:text-gray-900"
-          >
-            Contact Us
-          </Link>
+          {[
+            { href: "/student-dashboard", label: "Home" },
+            { href: "/about-us", label: "About Us" },
+            { href: "/events", label: "Events" },
+            { href: "/login", label: "Login" },
+            { href: "/contact-us", label: "Contact Us" },
+          ].map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="text-gray-700 hover:text-white transition-colors duration-300 px-3 py-2 rounded-md hover:bg-violet-500"
+            >
+              {label}
+            </Link>
+          ))}
         </div>
 
         {/* Mobile Menu Button */}
@@ -83,43 +78,24 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="container mx-auto px-4 pt-2 pb-4 space-y-3">
-            <Link
-              href="/"
-              className="block text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/about-us"
-              className="block text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              About Us
-            </Link>
-            <Link
-              href="/events"
-              className="block text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Events
-            </Link>
-            <Link
-              href="/login"
-              className="block text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Login
-            </Link>
-            <Link
-              href="/contact-us"
-              className="block text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact Us
-            </Link>
+        <div className="md:hidden bg-violet-200">
+          <div className="container mx-auto px-4 py-4 space-y-3">
+            {[
+              { href: "/", label: "Home" },
+              { href: "/about-us", label: "About Us" },
+              { href: "/events", label: "Events" },
+              { href: "/login", label: "Login" },
+              { href: "/contact-us", label: "Contact Us" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="block text-gray-700 hover:text-white hover:bg-violet-500 transition-colors duration-300 px-3 py-2 rounded-md"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
       )}
