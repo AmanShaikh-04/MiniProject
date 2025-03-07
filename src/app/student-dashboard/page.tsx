@@ -17,28 +17,21 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Column - Profile */}
           <div>
-            <Profile
-              name="John Doe"
-              age="21"
-              // profileImage="/profile.jpg" // Uncomment and add path when you have actual images
-            />
+            <Profile />
           </div>
-
           {/* Right Column - Registered Events */}
           <div>
-            <RegisteredEvents events={sampleEvents} />
+            <RegisteredEvents />
           </div>
         </div>
         <div className="mt-6">
           <UpcomingEvents />
         </div>
       </main>
-
       <Footer />
     </div>
   );
