@@ -13,22 +13,25 @@ import Footer from "./components/footer";
 const HomePage = () => {
   return (
     <main className="flex flex-col min-h-screen">
-      {/* Navbar */}
       <Navbar />
-
-      {/* Main Content */}
       <div className="flex-grow">
-        <Hero />
-        <AboutUs />
-        <UpcomingEvents />
+        <section id="hero">
+          <Hero />
+        </section>
+        <section id="about-us">
+          <AboutUs />
+        </section>
+        <section id="upcoming-events">
+          <UpcomingEvents />
+        </section>
         <PastEvents />
         <Gallery />
         <Testimonial />
-        <FAQ />
-        {/* <ContactUs /> */}
+        <section id="faq">
+          <FAQ />
+        </section>
+        {/* Optionally wrap ContactUs in a section if needed */}
       </div>
-
-      {/* Footer */}
       <Footer />
     </main>
   );
