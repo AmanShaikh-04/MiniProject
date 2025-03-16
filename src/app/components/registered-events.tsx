@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { auth, db } from "@/app/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
@@ -41,61 +41,72 @@ const RegisteredEvents: React.FC = () => {
     });
   };
 
-  useEffect(() => {
-    const fetchRegisteredEvents = async () => {
-      // Get the current user once at the start.
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        setEvents([]);
-        setLoading(false);
-        return;
-      }
-      try {
-        // Fetch all events from the "events" collection.
-        const eventsCollection = collection(db, "events");
-        const eventsSnapshot = await getDocs(eventsCollection);
-        const registeredEvents: Event[] = [];
-
-        // For each event, check if a registration exists in its "registeredStudents" subcollection.
-        for (const eventDoc of eventsSnapshot.docs) {
-          // Re-check if user is still logged in before proceeding.
-          if (!auth.currentUser) break;
-
-          const eventId = eventDoc.id;
-          const regDocRef = doc(
-            db,
-            "events",
-            eventId,
-            "registeredStudents",
-            currentUser.uid,
-          );
-          const regDocSnap = await getDoc(regDocRef);
-          if (regDocSnap.exists()) {
-            const eventData = eventDoc.data();
-            registeredEvents.push({
-              id: eventId,
-              name: eventData.eventName || "Unnamed Event",
-              date: formatDate(eventData.startDate),
-              time: formatTime(eventData.startTime),
-              image: eventData.coverImage || "/assets/aiktclogo1.png",
-            });
-          }
-        }
-        setEvents(registeredEvents);
-      } catch (error) {
-        console.error("Error fetching registered events:", error);
-      }
+  // Extracted function to fetch registered events.
+  const fetchRegisteredEvents = useCallback(async () => {
+    setLoading(true);
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setEvents([]);
       setLoading(false);
-    };
+      return;
+    }
+    try {
+      const eventsCollection = collection(db, "events");
+      const eventsSnapshot = await getDocs(eventsCollection);
+      const registeredEvents: Event[] = [];
 
-    // Listen for auth state changes to ensure a user is logged in.
+      // For each event, check if a registration exists in its "registeredStudents" subcollection.
+      for (const eventDoc of eventsSnapshot.docs) {
+        if (!auth.currentUser) break; // re-check if user is still logged in
+        const eventId = eventDoc.id;
+        const regDocRef = doc(
+          db,
+          "events",
+          eventId,
+          "registeredStudents",
+          currentUser.uid,
+        );
+        const regDocSnap = await getDoc(regDocRef);
+        if (regDocSnap.exists()) {
+          const eventData = eventDoc.data();
+          registeredEvents.push({
+            id: eventId,
+            name: eventData.eventName || "Unnamed Event",
+            date: formatDate(eventData.startDate),
+            time: formatTime(eventData.startTime),
+            image: eventData.coverImage || "/assets/aiktclogo1.png",
+          });
+        }
+      }
+      setEvents(registeredEvents);
+    } catch (error) {
+      console.error("Error fetching registered events:", error);
+    }
+    setLoading(false);
+  }, []);
+
+  // Listen for auth state changes.
+  useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(() => {
       fetchRegisteredEvents();
     });
     return () => unsubscribe();
-  }, []);
+  }, [fetchRegisteredEvents]);
 
-  // Open event detail modal by fetching full event details from Firestore.
+  // Listen for "registrationSuccess" events to refresh the registered events.
+  useEffect(() => {
+    const handleRegistrationSuccess = () => {
+      fetchRegisteredEvents();
+    };
+    window.addEventListener("registrationSuccess", handleRegistrationSuccess);
+    return () =>
+      window.removeEventListener(
+        "registrationSuccess",
+        handleRegistrationSuccess,
+      );
+  }, [fetchRegisteredEvents]);
+
+  // Open event detail modal by fetching full event details.
   const openEventDetail = async (event: Event) => {
     setSelectedEvent(event);
     setDetailLoading(true);
@@ -116,7 +127,7 @@ const RegisteredEvents: React.FC = () => {
     setEventDetail(null);
   };
 
-  // Show only the first 3 events in the fixed container.
+  // Show only the first 3 events.
   const eventsToShow = events.slice(0, 3);
 
   return (
@@ -129,7 +140,6 @@ const RegisteredEvents: React.FC = () => {
         <div>Loading...</div>
       ) : events.length > 0 ? (
         <>
-          {/* Fixed-height container (max 3 events) */}
           <div
             className="space-y-6"
             style={{ maxHeight: "calc(3 * 7rem)", overflow: "hidden" }}
@@ -159,8 +169,6 @@ const RegisteredEvents: React.FC = () => {
               </div>
             ))}
           </div>
-
-          {/* Show All button if there are more than 3 events */}
           {events.length > 3 && (
             <div className="mt-4 text-center">
               <button

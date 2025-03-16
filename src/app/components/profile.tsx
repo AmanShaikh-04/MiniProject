@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { auth, db } from "@/app/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 interface Student {
-  [key: string]: any; // For displaying all fields in the modal
+  [key: string]: any;
   firstName?: string;
-  lastName?: string; // This is the "Surname"
-  fatherName?: string; // This is the "Last Name"
+  lastName?: string; // Surname
+  fatherName?: string; // Last Name
   rollNo?: string;
   branch?: string;
   department?: string;
@@ -21,40 +21,58 @@ interface Student {
 const Profile: React.FC = () => {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [showEditConfirmation, setShowEditConfirmation] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
 
-  // Edit mode states for left column fields
-  const [editFirstName, setEditFirstName] = useState(false);
-  const [editSurname, setEditSurname] = useState(false);
-  const [editLastName, setEditLastName] = useState(false);
-
-  // Temporary states for edited values
+  // Temporary values for editing
   const [tempFirstName, setTempFirstName] = useState("");
   const [tempSurname, setTempSurname] = useState("");
   const [tempLastName, setTempLastName] = useState("");
+  const [tempRollNo, setTempRollNo] = useState("");
+  const [tempBranch, setTempBranch] = useState("");
+  const [tempDepartment, setTempDepartment] = useState("");
+  const [tempYear, setTempYear] = useState("");
+
+  // Profile photo changes (local only)
+  const [newProfilePhoto, setNewProfilePhoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch student profile from the "students" collection
+  const fetchProfile = async () => {
+    if (auth.currentUser) {
+      try {
+        const userDocRef = doc(db, "student", auth.currentUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const data = userDocSnap.data() as Student;
+          setStudent(data);
+
+          // Initialize temporary states for editing
+          setTempFirstName(data.firstName || "");
+          setTempSurname(data.lastName || "");
+          setTempLastName(data.fatherName || "");
+          setTempRollNo(data.rollNo || "");
+          setTempBranch(data.branch || "");
+          setTempDepartment(data.department || "");
+          setTempYear(data.yearOfStudy || "");
+
+          setNewProfilePhoto(null);
+        } else {
+          console.log("No user data found for uid", auth.currentUser.uid);
+        }
+      } catch (error) {
+        console.error("Error fetching student data:", error);
+      }
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    // Listen for auth changes so user is valid on refresh
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        try {
-          const userDocRef = doc(db, "users", user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const data = userDocSnap.data() as Student;
-            setStudent(data);
-            // Set temporary values for inline editing
-            setTempFirstName(data.firstName || "");
-            setTempSurname(data.lastName || "");
-            setTempLastName(data.fatherName || "");
-          } else {
-            console.log("No user data found for uid", user.uid);
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      }
-      setLoading(false);
+    const unsubscribe = auth.onAuthStateChanged(() => {
+      fetchProfile();
     });
     return () => unsubscribe();
   }, []);
@@ -65,41 +83,62 @@ const Profile: React.FC = () => {
 
   const closeModal = () => {
     setShowDetailsModal(false);
-    // Reset edit modes when closing
-    setEditFirstName(false);
-    setEditSurname(false);
-    setEditLastName(false);
+    setEditMode(false);
+    setRequestSent(false);
   };
 
-  // Handlers for saving edited fields
-  const handleSaveField = async (
-    fieldKey: "firstName" | "lastName" | "fatherName",
-    newValue: string,
-  ) => {
-    if (auth.currentUser) {
-      try {
-        const userDocRef = doc(db, "users", auth.currentUser.uid);
-        await updateDoc(userDocRef, { [fieldKey]: newValue });
-        setStudent((prev) => (prev ? { ...prev, [fieldKey]: newValue } : prev));
-      } catch (error) {
-        console.error(`Error updating ${fieldKey}:`, error);
-      }
+  // Confirm user wants to request changes
+  const handleEditClick = () => {
+    if (!requestSent) {
+      setShowEditConfirmation(true);
     }
   };
 
-  const handleSaveFirstName = async () => {
-    await handleSaveField("firstName", tempFirstName);
-    setEditFirstName(false);
+  // User confirms "Yes" => enable edit mode
+  const confirmEdit = () => {
+    setShowEditConfirmation(false);
+    setEditMode(true);
+    setRequestSent(false);
   };
 
-  const handleSaveSurname = async () => {
-    await handleSaveField("lastName", tempSurname);
-    setEditSurname(false);
+  // User cancels the confirmation
+  const cancelEditConfirmation = () => {
+    setShowEditConfirmation(false);
   };
 
-  const handleSaveLastName = async () => {
-    await handleSaveField("fatherName", tempLastName);
-    setEditLastName(false);
+  // Cancel editing => revert local changes
+  const handleCancelEdit = () => {
+    if (student) {
+      setTempFirstName(student.firstName || "");
+      setTempSurname(student.lastName || "");
+      setTempLastName(student.fatherName || "");
+      setTempRollNo(student.rollNo || "");
+      setTempBranch(student.branch || "");
+      setTempDepartment(student.department || "");
+      setTempYear(student.yearOfStudy || "");
+    }
+    setNewProfilePhoto(null);
+    setEditMode(false);
+    setRequestSent(false);
+  };
+
+  // Handle file selection for new photo
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setNewProfilePhoto(ev.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // On Save => just show "Request sent", do NOT update Firestore
+  const handleSaveChanges = () => {
+    setRequestSent(true);
   };
 
   if (loading) {
@@ -118,7 +157,11 @@ const Profile: React.FC = () => {
           <div className="flex items-center justify-center flex-shrink-0">
             <div className="relative w-36 h-36 rounded-full bg-indigo-300 overflow-hidden shadow-lg border-4 border-indigo-500">
               <Image
-                src={student.profilePhoto || "/assets/logo.jpg"}
+                src={
+                  newProfilePhoto
+                    ? newProfilePhoto
+                    : student.profilePhoto || "/assets/logo.jpg"
+                }
                 alt="Profile"
                 fill
                 className="object-cover"
@@ -126,7 +169,7 @@ const Profile: React.FC = () => {
             </div>
           </div>
 
-          {/* User Info */}
+          {/* Basic Info */}
           <div className="flex-grow flex flex-col justify-center text-center sm:text-left">
             <h1 className="text-2xl font-bold text-gray-800 mb-1">
               {student.firstName} {student.lastName}
@@ -161,7 +204,7 @@ const Profile: React.FC = () => {
         <div className="text-center py-4">No user data found.</div>
       )}
 
-      {/* Modal for displaying and editing details */}
+      {/* DETAILS MODAL */}
       {showDetailsModal && student && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
@@ -170,16 +213,16 @@ const Profile: React.FC = () => {
             onClick={closeModal}
           ></div>
 
-          {/* Modal Content */}
-          <div className="relative bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-2xl p-8 w-full max-w-3xl border border-indigo-200">
-            {/* Close Button */}
+          {/* Modal Content (Scrollable if too tall) */}
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl border border-indigo-200 max-h-[90vh] overflow-y-auto">
+            {/* Close Icon */}
             <button
-              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
               onClick={closeModal}
+              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -193,14 +236,20 @@ const Profile: React.FC = () => {
               </svg>
             </button>
 
-            {/* Modal Header */}
+            {/* Header */}
             <h2 className="text-3xl font-extrabold text-indigo-700 mb-6 text-center">
-              User Details
+              Student Details
             </h2>
-            <div className="flex items-center justify-center mb-6">
-              <div className="relative w-24 h-24 rounded-full bg-indigo-300 overflow-hidden shadow-md border-4 border-indigo-500">
+
+            {/* Profile Pic */}
+            <div className="flex items-center justify-center mb-4">
+              <div className="relative w-24 h-24 rounded-full bg-indigo-200 overflow-hidden shadow-md border-4 border-indigo-500">
                 <Image
-                  src={student.profilePhoto || "/assets/logo.jpg"}
+                  src={
+                    newProfilePhoto
+                      ? newProfilePhoto
+                      : student.profilePhoto || "/assets/logo.jpg"
+                  }
                   alt="Profile"
                   fill
                   className="object-cover"
@@ -208,257 +257,234 @@ const Profile: React.FC = () => {
               </div>
             </div>
 
-            {/* Two-Column Layout */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Left Column */}
-              <div className="space-y-4">
-                {/* First Name */}
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <span className="text-indigo-700 text-sm uppercase font-bold">
-                      First Name
-                    </span>
-                    <button
-                      onClick={() => setEditFirstName(true)}
-                      className="text-indigo-500 hover:text-indigo-700"
-                    >
-                      {/* Pen Icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15.232 5.232l3.536 3.536M9 11l6-6m2 2a2.121 2.121 0 113 3L10 21H7v-3L16.232 7.768z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  {editFirstName ? (
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value={tempFirstName}
-                        onChange={(e) => setTempFirstName(e.target.value)}
-                        className="border-b border-indigo-400 focus:outline-none text-base text-gray-800 flex-grow"
-                      />
-                      <button
-                        onClick={handleSaveFirstName}
-                        className="ml-2 text-green-500 hover:text-green-700"
-                      >
-                        {/* Check Icon */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-gray-800 text-base">
-                      {student.firstName || "—"}
-                    </span>
-                  )}
-                </div>
+            {/* Change Photo Button (only in edit mode) */}
+            {editMode && (
+              <div className="flex justify-center mb-6">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-transform transform hover:scale-105"
+                >
+                  Change Photo
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+              </div>
+            )}
 
-                {/* Surname (lastName) */}
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <span className="text-indigo-700 text-sm uppercase font-bold">
-                      Surname
-                    </span>
-                    <button
-                      onClick={() => setEditSurname(true)}
-                      className="text-indigo-500 hover:text-indigo-700"
-                    >
-                      {/* Pen Icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15.232 5.232l3.536 3.536M9 11l6-6m2 2a2.121 2.121 0 113 3L10 21H7v-3L16.232 7.768z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  {editSurname ? (
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value={tempSurname}
-                        onChange={(e) => setTempSurname(e.target.value)}
-                        className="border-b border-indigo-400 focus:outline-none text-base text-gray-800 flex-grow"
-                      />
-                      <button
-                        onClick={handleSaveSurname}
-                        className="ml-2 text-green-500 hover:text-green-700"
-                      >
-                        {/* Check Icon */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-gray-800 text-base">
-                      {student.lastName || "—"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Last Name (fatherName) */}
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <span className="text-indigo-700 text-sm uppercase font-bold">
-                      Last Name
-                    </span>
-                    <button
-                      onClick={() => setEditLastName(true)}
-                      className="text-indigo-500 hover:text-indigo-700"
-                    >
-                      {/* Pen Icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15.232 5.232l3.536 3.536M9 11l6-6m2 2a2.121 2.121 0 113 3L10 21H7v-3L16.232 7.768z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  {editLastName ? (
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value={tempLastName}
-                        onChange={(e) => setTempLastName(e.target.value)}
-                        className="border-b border-indigo-400 focus:outline-none text-base text-gray-800 flex-grow"
-                      />
-                      <button
-                        onClick={handleSaveLastName}
-                        className="ml-2 text-green-500 hover:text-green-700"
-                      >
-                        {/* Check Icon */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-gray-800 text-base">
-                      {student.fatherName || "—"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Roll No (non-editable) */}
-                <div className="flex flex-col">
-                  <span className="text-indigo-700 text-sm uppercase font-bold">
-                    Roll No
+            {/* DETAILS TABLE */}
+            <div className="space-y-3">
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  First Name
+                </span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none w-full"
+                    value={tempFirstName}
+                    onChange={(e) => setTempFirstName(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-gray-700">
+                    {student.firstName || "—"}
                   </span>
-                  <span className="text-gray-800 text-base">
-                    {student.rollNo || "—"}
-                  </span>
-                </div>
+                )}
               </div>
 
-              {/* Right Column */}
-              <div className="space-y-4">
-                {/* Branch */}
-                <div className="flex flex-col">
-                  <span className="text-indigo-700 text-sm uppercase font-bold">
-                    Branch
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  Surname
+                </span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none w-full"
+                    value={tempSurname}
+                    onChange={(e) => setTempSurname(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-gray-700">
+                    {student.lastName || "—"}
                   </span>
-                  <span className="text-gray-800 text-base">
-                    {student.branch || "—"}
+                )}
+              </div>
+
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  Last Name
+                </span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none w-full"
+                    value={tempLastName}
+                    onChange={(e) => setTempLastName(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-gray-700">
+                    {student.fatherName || "—"}
                   </span>
-                </div>
-                {/* Department */}
-                <div className="flex flex-col">
-                  <span className="text-indigo-700 text-sm uppercase font-bold">
-                    Department
-                  </span>
-                  <span className="text-gray-800 text-base">
+                )}
+              </div>
+
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  Roll No
+                </span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none w-full"
+                    value={tempRollNo}
+                    onChange={(e) => setTempRollNo(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-gray-700">{student.rollNo || "—"}</span>
+                )}
+              </div>
+
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  Branch
+                </span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none w-full"
+                    value={tempBranch}
+                    onChange={(e) => setTempBranch(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-gray-700">{student.branch || "—"}</span>
+                )}
+              </div>
+
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  Department
+                </span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none w-full"
+                    value={tempDepartment}
+                    onChange={(e) => setTempDepartment(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-gray-700">
                     {student.department || "—"}
                   </span>
-                </div>
-                {/* Year */}
-                <div className="flex flex-col">
-                  <span className="text-indigo-700 text-sm uppercase font-bold">
-                    Year
-                  </span>
-                  <span className="text-gray-800 text-base">
+                )}
+              </div>
+
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  Year
+                </span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none w-full"
+                    value={tempYear}
+                    onChange={(e) => setTempYear(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-gray-700">
                     {student.yearOfStudy || "—"}
                   </span>
-                </div>
-                {/* Email-Id */}
-                <div className="flex flex-col">
-                  <span className="text-indigo-700 text-sm uppercase font-bold">
-                    Email-Id
-                  </span>
-                  <span className="text-gray-800 text-base">
-                    {student.email || "—"}
-                  </span>
-                </div>
+                )}
+              </div>
+
+              <div
+                className={`grid grid-cols-2 items-center ${editMode ? "gap-x-2 gap-y-2" : "gap-x-8 gap-y-2"}`}
+              >
+                <span className="font-semibold text-indigo-700 uppercase text-sm">
+                  Email-Id
+                </span>
+                <span className="text-gray-700">{student.email || "—"}</span>
               </div>
             </div>
 
-            <div className="mt-8 text-right">
+            {/* Request Sent Message */}
+            {requestSent && (
+              <p className="mt-4 text-center text-green-600 font-semibold">
+                Request sent successfully!
+              </p>
+            )}
+
+            {/* Footer Buttons */}
+            <div className="mt-8 flex flex-col sm:flex-row justify-center sm:justify-between items-center gap-4">
+              {!editMode ? (
+                <button
+                  onClick={handleEditClick}
+                  className="w-32 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-transform transform hover:scale-105"
+                >
+                  Edit
+                </button>
+              ) : (
+                <button
+                  onClick={handleCancelEdit}
+                  className="w-32 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-transform transform hover:scale-105"
+                >
+                  Cancel Edit
+                </button>
+              )}
+
+              {editMode && (
+                <button
+                  onClick={handleSaveChanges}
+                  className="w-32 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md transition-transform transform hover:scale-105"
+                >
+                  Save
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Confirmation Popup */}
+      {showEditConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={cancelEditConfirmation}
+          ></div>
+          <div className="relative bg-white rounded-xl p-6 w-full max-w-sm border border-gray-300 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              Are you sure you want to request changes to your profile?
+            </h3>
+            <div className="flex justify-end gap-4">
               <button
-                onClick={closeModal}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-transform transform hover:scale-105"
+                onClick={cancelEditConfirmation}
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md"
               >
-                Close
+                No
+              </button>
+              <button
+                onClick={confirmEdit}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+              >
+                Yes
               </button>
             </div>
           </div>
