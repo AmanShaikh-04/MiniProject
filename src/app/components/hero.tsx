@@ -21,7 +21,7 @@ const HeroSection = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch user role only if auth is loaded and a user is present
+  // Fetch user role from role-specific collections (admin, host, student)
   useEffect(() => {
     if (!authLoaded || !user) {
       setUserRole(null);
@@ -31,19 +31,39 @@ const HeroSection = () => {
     let isMounted = true;
     const fetchUserRole = async () => {
       try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (!isMounted) return;
-        if (docSnap.exists()) {
-          setUserRole(docSnap.data().role || null);
-        } else {
+        // Check if the user is an admin
+        const adminDocRef = doc(db, "admin", user.uid);
+        const adminDocSnap = await getDoc(adminDocRef);
+        if (adminDocSnap.exists() && isMounted) {
+          setUserRole("admin");
+          return;
+        }
+
+        // Check if the user is a host
+        const hostDocRef = doc(db, "host", user.uid);
+        const hostDocSnap = await getDoc(hostDocRef);
+        if (hostDocSnap.exists() && isMounted) {
+          setUserRole("host");
+          return;
+        }
+
+        // Check if the user is a student
+        const studentDocRef = doc(db, "student", user.uid);
+        const studentDocSnap = await getDoc(studentDocRef);
+        if (studentDocSnap.exists() && isMounted) {
+          setUserRole("student");
+          return;
+        }
+
+        // No role found
+        if (isMounted) {
           setUserRole(null);
         }
       } catch (error) {
         console.error("Error fetching user role:", error);
-        // The error likely means a Firestore call was attempted while unauthenticated.
-        // Setting role to null avoids further issues.
-        setUserRole(null);
+        if (isMounted) {
+          setUserRole(null);
+        }
       }
     };
 
@@ -53,7 +73,7 @@ const HeroSection = () => {
     };
   }, [authLoaded, user]);
 
-  // Set defaults: when no user is logged in, the button shows "LOGIN"
+  // Set default values for redirect URL and button text
   let redirectUrl = "/login";
   let buttonText = "LOGIN";
 
@@ -62,13 +82,13 @@ const HeroSection = () => {
       redirectUrl = "/student-dashboard";
       buttonText = "REGISTER";
     } else if (userRole === "host") {
-      redirectUrl = "/event-register";
+      redirectUrl = "/host-dashboard";
       buttonText = "REGISTER";
     } else if (userRole === "admin") {
       redirectUrl = "/admin-dashboard";
       buttonText = "REGISTER";
     } else {
-      // In case a logged-in user has no role, you could still direct them to login or handle this differently.
+      // If a logged-in user has no role, you can choose to handle this differently
       redirectUrl = "/login";
       buttonText = "REGISTER";
     }

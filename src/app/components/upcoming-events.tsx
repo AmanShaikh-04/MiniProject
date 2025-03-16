@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { db, auth } from "@/app/firebase";
 import {
   collection,
@@ -37,6 +38,7 @@ interface EventData {
 }
 
 const UpcomingEventsSection = () => {
+  const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
 
@@ -48,14 +50,9 @@ const UpcomingEventsSection = () => {
   const [registrationPassword, setRegistrationPassword] = useState("");
   const [registrationError, setRegistrationError] = useState("");
 
-  // --- Fetch Events only when a user is authenticated ---
+  // Fetch events regardless of user authentication status
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        // If no user, clear events and exit.
-        setEvents([]);
-        return;
-      }
+    const fetchEvents = async () => {
       try {
         const eventsCollection = collection(db, "events");
         const eventsSnapshot = await getDocs(eventsCollection);
@@ -67,8 +64,9 @@ const UpcomingEventsSection = () => {
       } catch (error) {
         console.error("Error fetching events:", error);
       }
-    });
-    return () => unsubscribe();
+    };
+
+    fetchEvents();
   }, []);
 
   // --- Helper functions for date/time formatting ---
@@ -114,15 +112,15 @@ const UpcomingEventsSection = () => {
         await reauthenticateWithCredential(currentUser, credential);
       }
 
-      // Fetch user details from the "users" collection.
-      const userDocRef = doc(db, "users", currentUser.uid);
+      // Fetch user details from the "student" collection instead of "users".
+      const userDocRef = doc(db, "student", currentUser.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) {
         throw new Error("User details not found in database");
       }
       const userData = userDocSnap.data();
 
-      // Map keys as stored in your new users collection.
+      // Map keys as stored in your student collection.
       const fatherName = userData.fatherName || "";
       const studentName = userData.firstName || "";
       const surnameName = userData.lastName || "";
@@ -161,8 +159,11 @@ const UpcomingEventsSection = () => {
     }
   };
 
-  // Close registration modal and reset its state.
+  // Modified close function: if registration was successful, dispatch event to refresh registered-events.
   const closeRegistrationModal = () => {
+    if (registrationStep === "success") {
+      window.dispatchEvent(new CustomEvent("registrationSuccess"));
+    }
     setRegistrationEvent(null);
     setRegistrationStep("confirm");
     setRegistrationPassword("");
@@ -484,17 +485,27 @@ const UpcomingEventsSection = () => {
                 </div>
                 <div className="flex flex-col space-y-3">
                   <button
-                    onClick={() => setSelectedEvent(event)}
+                    onClick={() => {
+                      if (!auth.currentUser) {
+                        router.push("/login");
+                      } else {
+                        setSelectedEvent(event);
+                      }
+                    }}
                     className="bg-blue-600 text-white rounded-md px-6 py-3 text-base font-medium hover:bg-blue-700 transition-colors duration-300"
                   >
                     Details
                   </button>
                   <button
                     onClick={() => {
-                      setRegistrationEvent(event);
-                      setRegistrationStep("confirm");
-                      setRegistrationPassword("");
-                      setRegistrationError("");
+                      if (!auth.currentUser) {
+                        router.push("/login");
+                      } else {
+                        setRegistrationEvent(event);
+                        setRegistrationStep("confirm");
+                        setRegistrationPassword("");
+                        setRegistrationError("");
+                      }
                     }}
                     className="bg-green-600 text-white rounded-md px-6 py-3 text-base font-medium hover:bg-green-700 transition-colors duration-300"
                   >
