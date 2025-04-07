@@ -75,6 +75,21 @@ const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         theme: {
           color: "#0d6efd",
         },
+        // Payment method restrictions - only allowing UPI, wallet, card, and net banking
+        method: {
+          // Explicitly enable only the required payment methods
+          netbanking: true,
+          card: true,
+          upi: true,
+          wallet: true,
+
+          // Explicitly disable all other payment methods
+          emi: false,
+          paylater: false,
+          cod: false,
+          bank_transfer: false,
+          app: false,
+        },
       };
 
       const razorpay = new (window as any).Razorpay(options);
