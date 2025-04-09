@@ -218,7 +218,7 @@ export default function ListedEvents({ hostId, limit = 5 }: ListedEventsProps) {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto mt-8 bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="max-w-4xl mx-auto mt-8 bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           My Listed Events
         </h2>
