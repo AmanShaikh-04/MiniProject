@@ -131,26 +131,28 @@ const RegisteredEvents: React.FC = () => {
   const eventsToShow = events.slice(0, 3);
 
   return (
-    <div className="mt-8 p-6 bg-gray-100 text-gray-900 rounded-2xl shadow-lg border border-gray-300">
-      <h2 className="text-xl font-bold border-b-4 border-indigo-500 pb-2 mb-6 uppercase tracking-wider">
+    <div className="max-w-4xl mx-auto mt-8 bg-white rounded-xl shadow-lg p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
         My Registered Events
       </h2>
 
       {loading ? (
-        <div>Loading...</div>
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <p className="text-gray-500">Loading events...</p>
+        </div>
       ) : events.length > 0 ? (
         <>
           <div
             className="space-y-6"
-            style={{ maxHeight: "calc(3 * 7rem)", overflow: "hidden" }}
+            style={{ maxHeight: "21rem", overflow: "auto" }}
           >
             {eventsToShow.map((event) => (
               <div
                 key={event.id}
-                className="flex items-center gap-6 p-4 bg-indigo-100 rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-indigo-300 cursor-pointer"
+                className="flex items-center gap-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 border border-gray-200 cursor-pointer"
                 onClick={() => openEventDetail(event)}
               >
-                <div className="relative w-20 h-20 rounded-full bg-indigo-300 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-md border border-indigo-500">
+                <div className="relative w-16 h-16 rounded-full overflow-hidden shadow-md border border-gray-300">
                   <Image
                     src={event.image}
                     alt={event.name}
@@ -158,31 +160,22 @@ const RegisteredEvents: React.FC = () => {
                     className="object-cover"
                   />
                 </div>
-                <div className="flex-1 bg-indigo-400 p-4 rounded-lg shadow-inner text-white">
-                  <div className="text-lg font-semibold tracking-wide">
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-800">
                     {event.name}
-                  </div>
-                  <div className="text-sm text-white/80 font-light">
-                    {event.date} | {event.time}
-                  </div>
+                  </h3>
+                  <p className="text-sm text-gray-600">{event.date}</p>
+                  <p className="text-sm text-gray-600">{event.time}</p>
                 </div>
               </div>
             ))}
           </div>
-          {events.length > 3 && (
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setShowAllModal(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-              >
-                Show All
-              </button>
-            </div>
-          )}
         </>
       ) : (
-        <div className="text-center text-gray-600">
-          Registered events will appear here.
+        <div className="border border-gray-200 rounded-md p-6">
+          <p className="text-gray-500 text-center">
+            Registered events will appear here.
+          </p>
         </div>
       )}
 
@@ -199,13 +192,13 @@ const RegisteredEvents: React.FC = () => {
               {events.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-center gap-6 p-4 bg-indigo-100 rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-indigo-300 cursor-pointer"
+                  className="flex items-center gap-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 border border-gray-200 cursor-pointer"
                   onClick={() => {
                     openEventDetail(event);
                     setShowAllModal(false);
                   }}
                 >
-                  <div className="relative w-20 h-20 rounded-full bg-indigo-300 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-md border border-indigo-500">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden shadow-md border border-gray-300">
                     <Image
                       src={event.image}
                       alt={event.name}
@@ -213,13 +206,12 @@ const RegisteredEvents: React.FC = () => {
                       className="object-cover"
                     />
                   </div>
-                  <div className="flex-1 bg-indigo-400 p-4 rounded-lg shadow-inner text-white">
-                    <div className="text-lg font-semibold tracking-wide">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-800">
                       {event.name}
-                    </div>
-                    <div className="text-sm text-white/80 font-light">
-                      {event.date} | {event.time}
-                    </div>
+                    </h3>
+                    <p className="text-sm text-gray-600">{event.date}</p>
+                    <p className="text-sm text-gray-600">{event.time}</p>
                   </div>
                 </div>
               ))}
@@ -252,8 +244,8 @@ const RegisteredEvents: React.FC = () => {
                   className="absolute inset-0 bg-black opacity-50"
                   onClick={closeEventDetail}
                 ></div>
-                <div className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl overflow-auto max-h-full">
-                  <h3 className="text-2xl font-bold mb-4">
+                <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl overflow-auto max-h-full">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">
                     {eventDetail.eventName}
                   </h3>
                   {eventDetail.coverImage && (
@@ -266,22 +258,24 @@ const RegisteredEvents: React.FC = () => {
                       />
                     </div>
                   )}
-                  <p className="mb-2">
+                  <p className="mb-2 text-gray-700">
                     <span className="font-semibold">Date:</span>{" "}
                     {formatDate(eventDetail.startDate)} -{" "}
                     {formatDate(eventDetail.endDate)}
                   </p>
-                  <p className="mb-2">
+                  <p className="mb-2 text-gray-700">
                     <span className="font-semibold">Time:</span>{" "}
                     {formatTime(eventDetail.startTime)}
                   </p>
                   {eventDetail.description && (
-                    <p className="mb-4">{eventDetail.description}</p>
+                    <p className="mb-4 text-gray-700">
+                      {eventDetail.description}
+                    </p>
                   )}
                   <div className="text-right">
                     <button
                       onClick={closeEventDetail}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                      className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                     >
                       Close
                     </button>

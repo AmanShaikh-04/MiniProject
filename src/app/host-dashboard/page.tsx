@@ -8,6 +8,7 @@ import RegisteredEvents from "../components/registered-events";
 import ListedEvents from "../components/listed-events";
 import UpcomingEvents from "../components/upcoming-events";
 import PastEvents from "../components/past-events";
+import Payment from "../components/payment";
 
 export default function HostDashboardPage() {
   // Mock user state - replace with actual authentication later
@@ -32,26 +33,36 @@ export default function HostDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Column - Host Profile */}
-          <div>
+      <main className="flex-1 container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Host Profile */}
+          <div className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
             <HostProfile />
           </div>
-          {/* Right Column - Listed Events */}
-          <div className="col-span-2">
+
+          {/* Payment Summary */}
+          <div className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
+            <Payment />
+          </div>
+
+          {/* Registered Events */}
+          <div>
+            <RegisteredEvents />
+          </div>
+
+          {/* Listed Events */}
+          <div>
             <ListedEvents hostId={currentUserId} limit={3} />
           </div>
         </div>
-        <div className="mt-6">
-          <RegisteredEvents />
-        </div>
-        <div className="mt-6">
+
+        <div className="mt-8 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
           <UpcomingEvents />
         </div>
-        <div className="mt-6">
+
+        <div className="mt-8 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
           <PastEvents />
         </div>
       </main>

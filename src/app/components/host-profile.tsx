@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth, db } from "@/app/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import HostEventsModal from "./host-events-modal";
 
 interface Student {
   [key: string]: any;
@@ -24,6 +25,7 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEventsModal, setShowEventsModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
@@ -108,6 +110,10 @@ const Profile: React.FC = () => {
     setRequestSent(false);
   };
 
+  const handleDeleteClick = () => {
+    setShowEventsModal(true);
+  };
+
   // Confirm user wants to request changes
   const handleEditClick = () => {
     if (!requestSent) {
@@ -164,7 +170,7 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="mt-8 p-8 bg-gray-100 text-gray-900 rounded-2xl shadow-xl w-full max-w-lg mx-auto border border-gray-300">
+      <div className="relative mt-8 p-8 bg-white text-gray-900 rounded-3xl shadow-xl w-full max-w-lg mx-auto">
         Loading...
       </div>
     );
@@ -172,7 +178,7 @@ const Profile: React.FC = () => {
 
   return (
     <>
-      <div className="relative mt-8 p-8 bg-white text-gray-900 rounded-3xl shadow-xl w-full max-w-lg mx-auto border border-gray-200">
+      <div className="relative mt-8 p-8 bg-white text-gray-900 rounded-3xl shadow-xl w-full max-w-lg mx-auto">
         {student ? (
           <div className="flex flex-col gap-6 sm:flex-row items-center justify-between">
             {/* Profile Image */}
@@ -214,7 +220,7 @@ const Profile: React.FC = () => {
               </div>
             </div>
 
-            {/* DETAILS Button */}
+            {/* Action Button */}
             <button
               onClick={openModal}
               className="absolute bottom-4 right-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
@@ -236,7 +242,7 @@ const Profile: React.FC = () => {
             ></div>
 
             {/* Modal Content */}
-            <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl border border-indigo-200 max-h-[90vh] overflow-y-auto">
+            <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               {/* Close Icon */}
               <button
                 onClick={closeModal}
@@ -492,7 +498,7 @@ const Profile: React.FC = () => {
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={cancelEditConfirmation}
             ></div>
-            <div className="relative bg-white rounded-xl p-6 w-full max-w-sm border border-gray-300 shadow-xl">
+            <div className="relative bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
               <h3 className="text-lg font-bold text-gray-800 mb-4">
                 Are you sure you want to request changes to your profile?
               </h3>
@@ -523,10 +529,18 @@ const Profile: React.FC = () => {
         >
           Create Event
         </Link>
-        <button className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-colors">
+        <button
+          onClick={handleDeleteClick}
+          className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-colors"
+        >
           Delete Event
         </button>
       </div>
+      {/* Events Modal */}
+      <HostEventsModal
+        isOpen={showEventsModal}
+        onClose={() => setShowEventsModal(false)}
+      />
     </>
   );
 };

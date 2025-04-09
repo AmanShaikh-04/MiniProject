@@ -8,12 +8,15 @@ import RegisteredEvents from "../components/registered-events";
 import ListedEvents from "../components/listed-events";
 import UpcomingEvents from "../components/upcoming-events";
 import PastEvents from "../components/past-events";
+import Payment from "../components/payment";
+import AdminEventsManagement from "../components/admin-events-management";
 
 export default function HostDashboardPage() {
   // Mock user state - replace with actual authentication later
   const [isAuthenticated] = useState(true);
   const [currentUserId] = useState("user-123");
   const [loading] = useState(false);
+  const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
 
   if (loading) {
     return (
@@ -35,18 +38,27 @@ export default function HostDashboardPage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Column - Host Profile */}
-          <div>
-            <HostProfile />
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Admin Profile */}
+            <div>
+              <HostProfile />
+            </div>
+            {/* Payment */}
+            <div>
+              <Payment />
+            </div>
           </div>
-          {/* Right Column - Listed Events */}
-          <div className="col-span-2">
-            <ListedEvents hostId={currentUserId} limit={3} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Registered Events */}
+            <div>
+              <RegisteredEvents />
+            </div>
+            {/* Listed Events */}
+            <div>
+              <ListedEvents hostId={currentUserId} limit={3} />
+            </div>
           </div>
-        </div>
-        <div className="mt-6">
-          <RegisteredEvents />
         </div>
         <div className="mt-6">
           <UpcomingEvents />
@@ -56,6 +68,12 @@ export default function HostDashboardPage() {
         </div>
       </main>
       <Footer />
+
+      {/* Admin Events Management Modal */}
+      <AdminEventsManagement
+        isOpen={isEventsModalOpen}
+        onClose={() => setIsEventsModalOpen(false)}
+      />
     </div>
   );
 }
