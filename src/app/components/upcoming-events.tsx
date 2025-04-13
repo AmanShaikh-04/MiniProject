@@ -11,6 +11,8 @@ import {
   setDoc,
   doc,
   serverTimestamp,
+  query,
+  where,
 } from "firebase/firestore";
 import {
   EmailAuthProvider,
@@ -26,7 +28,8 @@ type RegStep =
   | "password"
   | "payment"
   | "success"
-  | "alreadyRegistered";
+  | "alreadyRegistered"
+  | "groupError";
 
 interface EventData {
   id: string;
@@ -50,8 +53,11 @@ interface EventData {
   refundAmount?: string;
   refundDate?: any;
   refundOption?: boolean;
-  registrationFee?: string; // stored in rupees (e.g., "500" means Rs.500)
+  registrationFee?: string;
   registrationFeeOption?: boolean;
+  // Add these two properties
+  minStudentsPerGroup?: number;
+  maxStudentsPerGroup?: number;
   [key: string]: any;
 }
 
@@ -82,6 +88,53 @@ const UpcomingEventsSection = () => {
   const [registrationStep, setRegistrationStep] = useState<RegStep>("confirm");
   const [registrationPassword, setRegistrationPassword] = useState("");
   const [registrationError, setRegistrationError] = useState("");
+
+  const fetchUserGroup = async () => {
+    if (!auth.currentUser) return null;
+    let groupId: string | null = null;
+    try {
+      const studentGroupRef = collection(
+        db,
+        "student",
+        auth.currentUser.uid,
+        "groups",
+      );
+      const studentGroupSnapshot = await getDocs(studentGroupRef);
+      if (!studentGroupSnapshot.empty) {
+        groupId = studentGroupSnapshot.docs[0].id;
+      } else {
+        const groupsQuery = query(
+          collection(db, "groups"),
+          where("createdBy", "==", auth.currentUser.uid),
+        );
+        const groupsSnapshot = await getDocs(groupsQuery);
+        if (!groupsSnapshot.empty) {
+          groupId = groupsSnapshot.docs[0].id;
+        }
+      }
+      if (!groupId) return null;
+
+      // Fetch and map members data, ensuring to supply default values.
+      const groupMembersRef = collection(db, "groups", groupId, "members");
+      const membersSnapshot = await getDocs(groupMembersRef);
+      const membersData = membersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const isLeader = membersData.some(
+        (member: any) => member.leader && member.uid === auth.currentUser!.uid,
+      );
+      return {
+        groupId,
+        isLeader,
+        memberCount: membersData.length,
+        members: membersData,
+      };
+    } catch (error) {
+      console.error("Error fetching group data:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -122,14 +175,13 @@ const UpcomingEventsSection = () => {
         await reauthenticateWithCredential(currentUser, credential);
       }
 
-      // Fetch user details from "student" collection.
+      // Fetch user profile details
       const userDocRef = doc(db, "student", currentUser.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) {
         throw new Error("User details not found in database");
       }
       const userData = userDocSnap.data();
-
       const fatherName = userData.fatherName || "";
       const studentName = userData.firstName || "";
       const surnameName = userData.lastName || "";
@@ -138,7 +190,102 @@ const UpcomingEventsSection = () => {
         setRegistrationError("No registration event selected.");
         return;
       }
-      // Store registration details in the event's "registeredStudents" subcollection.
+
+      // >>> Begin group event registration block
+      if (registrationEvent.isGroupEvent) {
+        if (!auth.currentUser) {
+          setRegistrationError("No logged-in user.");
+          return;
+        }
+
+        const groupData = await fetchUserGroup();
+        if (!groupData) {
+          setRegistrationError(
+            "Group details not found. Please ensure you are in a group.",
+          );
+          return;
+        }
+
+        if (
+          registrationEvent.minStudentsPerGroup !== undefined &&
+          registrationEvent.maxStudentsPerGroup !== undefined &&
+          (groupData.memberCount < registrationEvent.minStudentsPerGroup ||
+            groupData.memberCount > registrationEvent.maxStudentsPerGroup)
+        ) {
+          setRegistrationStep("groupError");
+          setRegistrationError(
+            `Your group must have between ${registrationEvent.minStudentsPerGroup} and ${registrationEvent.maxStudentsPerGroup} members. Your group currently has ${groupData.memberCount} member(s).`,
+          );
+          return;
+        }
+
+        const { groupId, isLeader, members } = groupData;
+        if (!isLeader) {
+          setRegistrationError(
+            "Only group leaders can register for group events.",
+          );
+          return;
+        }
+
+        // Build an array of group member registration details, using defaults:
+        const groupMembersData = (members || []).map((member: any) => ({
+          uid: member.uid || "",
+          firstName: member.firstName || "",
+          lastName: member.lastName || "",
+          fullName: `${member.firstName || ""} ${member.lastName || ""}`.trim(),
+        }));
+
+        // Prepare the group registration data object
+        const groupRegistrationData = {
+          groupCode: groupId, // 6-digit group code (ensure groupId is defined)
+          groupMembers: groupMembersData,
+          registrationDate: serverTimestamp(),
+          leaderId: auth.currentUser.uid || "",
+          eventId: registrationEvent.id || "",
+        };
+
+        // Write the group registration document in "registeredGroups" subcollection
+        await setDoc(
+          doc(db, "events", registrationEvent.id, "registeredGroups", groupId),
+          groupRegistrationData,
+        );
+
+        // ---------------------------------------------------------------------
+        // NEW CODE: Register each member individually so that the event appears
+        // in their "My Registered Events" list (which queries "registeredStudents").
+        // ---------------------------------------------------------------------
+        for (const member of groupMembersData) {
+          await setDoc(
+            doc(
+              db,
+              "events",
+              registrationEvent.id,
+              "registeredStudents",
+              member.uid,
+            ),
+            {
+              studentId: member.uid,
+              // Include additional details if needed, for example:
+              studentFullName: member.fullName,
+              registrationDate: serverTimestamp(),
+              registrationType: "group", // a flag to note this registration came via a group
+              groupCode: groupId,
+            },
+          );
+        }
+
+        // Determine next step based on fee
+        const fee = parseInt(registrationEvent?.registrationFee || "0");
+        if (fee > 0) {
+          setRegistrationStep("payment");
+        } else {
+          setRegistrationStep("success");
+        }
+        return; // Exit function after group registration is complete.
+      }
+      // >>> End group event registration block
+
+      // Existing individual registration logic (for non-group events)
       await setDoc(
         doc(
           db,
@@ -157,7 +304,6 @@ const UpcomingEventsSection = () => {
           registrationDate: serverTimestamp(),
         },
       );
-      // Check registration fee. If fee > 0, move to payment step; otherwise, mark as success.
       const fee = parseInt(registrationEvent?.registrationFee || "0");
       if (fee > 0) {
         setRegistrationStep("payment");
@@ -558,6 +704,25 @@ const UpcomingEventsSection = () => {
               </>
             )}
 
+            {registrationStep === "groupError" && (
+              <>
+                <h3 className="text-2xl font-bold text-red-700 mb-4">
+                  Group Registration Error
+                </h3>
+                <p className="text-lg text-gray-800 mb-6">
+                  {registrationError}
+                </p>
+                <div className="flex justify-end">
+                  <button
+                    onClick={closeRegistrationModal}
+                    className="bg-red-600 text-white rounded-md px-4 py-2 hover:bg-red-700 transition-colors"
+                  >
+                    OK
+                  </button>
+                </div>
+              </>
+            )}
+
             {registrationStep === "confirm" && (
               <>
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
@@ -688,23 +853,49 @@ const UpcomingEventsSection = () => {
                       const currentUser = auth.currentUser;
                       if (currentUser && registrationEvent) {
                         try {
-                          await setDoc(
-                            doc(
-                              db,
-                              "events",
-                              registrationEvent.id,
-                              "registeredStudents",
-                              currentUser.uid,
-                              "payments",
-                              response.razorpay_payment_id,
-                            ),
-                            {
-                              razorpay_order_id: response.razorpay_order_id,
-                              razorpay_payment_id: response.razorpay_payment_id,
-                              razorpay_signature: response.razorpay_signature,
-                              paymentDate: serverTimestamp(),
-                            },
-                          );
+                          if (registrationEvent.isGroupEvent) {
+                            const groupData = await fetchUserGroup();
+                            if (groupData) {
+                              await setDoc(
+                                doc(
+                                  db,
+                                  "events",
+                                  registrationEvent.id,
+                                  "registeredGroups",
+                                  groupData.groupId,
+                                  "payments",
+                                  response.razorpay_payment_id,
+                                ),
+                                {
+                                  razorpay_order_id: response.razorpay_order_id,
+                                  razorpay_payment_id:
+                                    response.razorpay_payment_id,
+                                  razorpay_signature:
+                                    response.razorpay_signature,
+                                  paymentDate: serverTimestamp(),
+                                },
+                              );
+                            }
+                          } else {
+                            await setDoc(
+                              doc(
+                                db,
+                                "events",
+                                registrationEvent.id,
+                                "registeredStudents",
+                                currentUser.uid,
+                                "payments",
+                                response.razorpay_payment_id,
+                              ),
+                              {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id:
+                                  response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                paymentDate: serverTimestamp(),
+                              },
+                            );
+                          }
                         } catch (error) {
                           console.error(
                             "Error storing payment details:",
@@ -805,10 +996,20 @@ const UpcomingEventsSection = () => {
                       {formatTime(event.startTime)}
                     </p>
                   </div>
-                  <p className="text-gray-700">
-                    <span className="font-medium">Registration Fee:</span>{" "}
-                    {event.registrationFee || "Free"}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="px-3 py-1 text-sm font-bold bg-green-100 text-green-800 rounded-full">
+                      <span className="font-medium">Fee:</span>{" "}
+                      {event.registrationFee
+                        ? `₹${event.registrationFee}`
+                        : "Free"}
+                    </span>
+                    {event.isGroupEvent && (
+                      <span className="px-3 py-1 text-sm font-bold bg-blue-100 text-blue-800 rounded-full">
+                        Group Event: {event.minStudentsPerGroup} -{" "}
+                        {event.maxStudentsPerGroup} Students
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col space-y-3">
                   <button
@@ -827,26 +1028,67 @@ const UpcomingEventsSection = () => {
                     onClick={async () => {
                       if (!auth.currentUser) {
                         router.push("/login");
-                      } else {
-                        // Check if user is already registered for this event
-                        const regDocRef = doc(
-                          db,
-                          "events",
-                          event.id,
-                          "registeredStudents",
-                          auth.currentUser.uid,
-                        );
-                        const regDocSnap = await getDoc(regDocRef);
-                        if (regDocSnap.exists()) {
+                        return;
+                      }
+                      // Existing code: Check if user is already registered.
+                      const regDocRef = doc(
+                        db,
+                        "events",
+                        event.id,
+                        "registeredStudents",
+                        auth.currentUser.uid,
+                      );
+                      const regDocSnap = await getDoc(regDocRef);
+                      if (regDocSnap.exists()) {
+                        setRegistrationEvent(event);
+                        setRegistrationStep("alreadyRegistered");
+                        return;
+                      }
+
+                      // ---------------------- ADD GROUP CHECK BELOW ----------------------
+                      if (event && event.isGroupEvent) {
+                        const groupData = await fetchUserGroup();
+
+                        if (!groupData) {
                           setRegistrationEvent(event);
-                          setRegistrationStep("alreadyRegistered");
-                        } else {
+                          setRegistrationStep("groupError");
+                          setRegistrationError(
+                            "You are not part of any group. Please join or create a group to register for this event.",
+                          );
+                          return;
+                        }
+
+                        if (!groupData.isLeader) {
                           setRegistrationEvent(event);
-                          setRegistrationStep("confirm");
-                          setRegistrationPassword("");
-                          setRegistrationError("");
+                          setRegistrationStep("groupError");
+                          setRegistrationError(
+                            "Only group leaders can register for group events. Please contact your group leader.",
+                          );
+                          return;
+                        }
+
+                        if (
+                          typeof event.minStudentsPerGroup === "number" &&
+                          typeof event.maxStudentsPerGroup === "number" &&
+                          (groupData.memberCount < event.minStudentsPerGroup ||
+                            groupData.memberCount > event.maxStudentsPerGroup)
+                        ) {
+                          setRegistrationEvent(event);
+                          setRegistrationStep("groupError");
+                          setRegistrationError(
+                            `Your group must have between ${event.minStudentsPerGroup} and ${event.maxStudentsPerGroup} members. Your group currently has ${groupData.memberCount} member(s).`,
+                          );
+                          return;
                         }
                       }
+
+                      // ---------------------- END GROUP CHECK ----------------------
+
+                      // Continue with your normal registration process if all checks pass.
+                      setRegistrationEvent(event);
+                      setRegistrationStep("confirm");
+                      setRegistrationPassword("");
+                      setRegistrationError("");
                     }}
                     className="bg-green-600 text-white rounded-md px-6 py-3 text-base font-medium hover:bg-green-700 transition-colors duration-300"
                   >

@@ -43,6 +43,9 @@ interface EventData {
   cancellationDate: Date | null;
   isDateRangeEnabled: boolean;
   isTimeRangeEnabled: boolean;
+  isGroupEvent: boolean;
+  minStudentsPerGroup: string;
+  maxStudentsPerGroup: string;
 }
 
 interface DropdownOption {
@@ -213,6 +216,9 @@ export default function EventRegistrationForm() {
     cancellationDate: null,
     isDateRangeEnabled: false, // default off
     isTimeRangeEnabled: false,
+    isGroupEvent: false,
+    minStudentsPerGroup: "",
+    maxStudentsPerGroup: "",
   });
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
@@ -398,6 +404,26 @@ export default function EventRegistrationForm() {
       eventData.startTime > eventData.endTime
     ) {
       setModalMessage("Start Time must be before End Time.");
+      return;
+    }
+    // Validation for Group Event fields
+    if (
+      eventData.isGroupEvent &&
+      (!eventData.minStudentsPerGroup || !eventData.maxStudentsPerGroup)
+    ) {
+      setModalMessage(
+        "Please enter both minimum and maximum students per group.",
+      );
+      return;
+    }
+    if (
+      eventData.isGroupEvent &&
+      parseFloat(eventData.minStudentsPerGroup) >
+        parseFloat(eventData.maxStudentsPerGroup)
+    ) {
+      setModalMessage(
+        "Minimum students per group cannot be greater than maximum students per group.",
+      );
       return;
     }
     try {
@@ -704,6 +730,100 @@ export default function EventRegistrationForm() {
                     }
                     innerRef={departmentRef}
                   />
+                </div>
+                {/* Group Event Section */}
+                <div className="mt-6 bg-gray-50 p-6 rounded-xl border border-gray-100">
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-3">
+                        Group Event?
+                      </label>
+                      <div className="flex items-center space-x-6">
+                        <label className="flex items-center cursor-pointer group">
+                          <div
+                            className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${eventData.isGroupEvent ? "bg-indigo-600 border-indigo-600" : "border-gray-400 group-hover:border-indigo-400"}`}
+                          >
+                            {eventData.isGroupEvent && (
+                              <div className="w-2 h-2 rounded-full bg-white"></div>
+                            )}
+                          </div>
+                          <input
+                            type="radio"
+                            name="isGroupEvent"
+                            value="yes"
+                            checked={eventData.isGroupEvent === true}
+                            onChange={() =>
+                              setEventData((prev) => ({
+                                ...prev,
+                                isGroupEvent: true,
+                              }))
+                            }
+                            className="hidden"
+                          />
+                          <span className="ml-2 text-gray-800">Yes</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer group">
+                          <div
+                            className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${!eventData.isGroupEvent ? "bg-indigo-600 border-indigo-600" : "border-gray-400 group-hover:border-indigo-400"}`}
+                          >
+                            {!eventData.isGroupEvent && (
+                              <div className="w-2 h-2 rounded-full bg-white"></div>
+                            )}
+                          </div>
+                          <input
+                            type="radio"
+                            name="isGroupEvent"
+                            value="no"
+                            checked={eventData.isGroupEvent === false}
+                            onChange={() =>
+                              setEventData((prev) => ({
+                                ...prev,
+                                isGroupEvent: false,
+                                minStudentsPerGroup: "",
+                                maxStudentsPerGroup: "",
+                              }))
+                            }
+                            className="hidden"
+                          />
+                          <span className="ml-2 text-gray-800">No</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div
+                      className={`transition-opacity duration-300 ${!eventData.isGroupEvent ? "opacity-50" : "opacity-100"}`}
+                    >
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Min Students Per Group
+                      </label>
+                      <input
+                        type="number"
+                        name="minStudentsPerGroup"
+                        value={eventData.minStudentsPerGroup}
+                        onChange={handleInputChange}
+                        placeholder="Enter minimum number"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 shadow-sm"
+                        disabled={!eventData.isGroupEvent}
+                        required={eventData.isGroupEvent}
+                      />
+                    </div>
+                    <div
+                      className={`transition-opacity duration-300 ${!eventData.isGroupEvent ? "opacity-50" : "opacity-100"}`}
+                    >
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Max Students Per Group
+                      </label>
+                      <input
+                        type="number"
+                        name="maxStudentsPerGroup"
+                        value={eventData.maxStudentsPerGroup}
+                        onChange={handleInputChange}
+                        placeholder="Enter maximum number"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 shadow-sm"
+                        disabled={!eventData.isGroupEvent}
+                        required={eventData.isGroupEvent}
+                      />
+                    </div>
+                  </div>
                 </div>
                 {/* Modified Event Schedule Section */}
                 <div className="space-y-6">

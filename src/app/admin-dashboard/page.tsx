@@ -3,20 +3,19 @@
 import React, { useState } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import HostProfile from "../components/host-profile";
+import AdminProfile from "../components/admin-profile";
 import RegisteredEvents from "../components/registered-events";
 import ListedEvents from "../components/listed-events";
 import UpcomingEvents from "../components/upcoming-events";
 import PastEvents from "../components/past-events";
 import Payment from "../components/payment";
-import AdminEventsManagement from "../components/admin-events-management";
+import Group from "../components/group";
 
 export default function HostDashboardPage() {
   // Mock user state - replace with actual authentication later
   const [isAuthenticated] = useState(true);
   const [currentUserId] = useState("user-123");
   const [loading] = useState(false);
-  const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
 
   if (loading) {
     return (
@@ -42,7 +41,7 @@ export default function HostDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Admin Profile */}
             <div>
-              <HostProfile />
+              <AdminProfile />
             </div>
             {/* Payment */}
             <div>
@@ -59,21 +58,18 @@ export default function HostDashboardPage() {
               <ListedEvents hostId={currentUserId} limit={3} />
             </div>
           </div>
+          <div className="mt-6">
+            <Group />
+          </div>
         </div>
         <div className="mt-6">
           <UpcomingEvents />
         </div>
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <PastEvents />
-        </div>
+        </div> */}
       </main>
       <Footer />
-
-      {/* Admin Events Management Modal */}
-      <AdminEventsManagement
-        isOpen={isEventsModalOpen}
-        onClose={() => setIsEventsModalOpen(false)}
-      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import ListedEvents from "../components/listed-events";
 import UpcomingEvents from "../components/upcoming-events";
 import PastEvents from "../components/past-events";
 import Payment from "../components/payment";
+import Group from "../components/group";
 
 export default function HostDashboardPage() {
   // Mock user state - replace with actual authentication later
@@ -57,14 +58,17 @@ export default function HostDashboardPage() {
             <ListedEvents hostId={currentUserId} limit={3} />
           </div>
         </div>
+        <div className="mt-6">
+          <Group />
+        </div>
 
         <div className="mt-8 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
           <UpcomingEvents />
         </div>
 
-        <div className="mt-8 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
+        {/* <div className="mt-8 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
           <PastEvents />
-        </div>
+        </div> */}
       </main>
       <Footer />
     </div>

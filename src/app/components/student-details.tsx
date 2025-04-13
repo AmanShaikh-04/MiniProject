@@ -19,7 +19,7 @@ interface StudentData {
   emailId: string;
   rollNo: string;
   yearOfStudy: string;
-  department: string; // single selection
+  department: string;
   branch: string;
   profilePhoto: File | null;
 }
@@ -28,6 +28,16 @@ interface StudentData {
 interface DropdownOption {
   value: string;
   label: string;
+}
+
+// Function to generate a random 6-letter alphabetic code
+function generateRandomAlphabeticCode(): string {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  return code;
 }
 
 export default function StudentDetailsForm() {
@@ -51,7 +61,6 @@ export default function StudentDetailsForm() {
     branch: "",
     profilePhoto: null,
   });
-
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,7 +69,7 @@ export default function StudentDetailsForm() {
     fileInputRef.current?.click();
   };
 
-  // Fetch already stored data from student collection and pre-fill the form
+  // Fetch and pre-fill student data from the "student" collection
   useEffect(() => {
     async function fetchUserData() {
       if (auth.currentUser) {
@@ -92,14 +101,14 @@ export default function StudentDetailsForm() {
     fetchUserData();
   }, []);
 
-  // Dropdown toggles (open/close)
+  // Dropdown toggles for academic fields
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isBranchDropdownOpen, setIsBranchDropdownOpen] =
     useState<boolean>(false);
   const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] =
     useState<boolean>(false);
 
-  // Refs for outside click detection
+  // Refs for outside click detection on dropdowns
   const branchRef = useRef<HTMLDivElement>(null);
   const yearRef = useRef<HTMLDivElement>(null);
   const departmentRef = useRef<HTMLDivElement>(null);
@@ -125,10 +134,7 @@ export default function StudentDetailsForm() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setStudentData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setStudentData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Handle file upload with Base64 conversion and size check (max 1 MB)
@@ -142,19 +148,21 @@ export default function StudentDetailsForm() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result as string);
-        setStudentData((prev) => ({
-          ...prev,
-          profilePhoto: file,
-        }));
+        setStudentData((prev) => ({ ...prev, profilePhoto: file }));
       };
       reader.readAsDataURL(file);
     }
   };
 
+  // On form submission, store student profile and create a new group in global "groups" collection.
+  // New Flow:
+  // - Generate a random 6-letter group code.
+  // - In the "groups" collection, create a new document with that group code.
+  // - Store a "code" field (and any metadata, if needed) in that document.
+  // - Under the created group document, add a "members" subcollection.
+  // - Add the submitting student as the first member in the subcollection with leader: true.
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Check that all fields are filled
     if (
       !studentData.surnameName ||
       !studentData.studentName ||
@@ -171,6 +179,7 @@ export default function StudentDetailsForm() {
     }
 
     try {
+      // Prepare student data for "student" collection
       const studentToStore = {
         firstName: studentData.studentName,
         lastName: studentData.surnameName,
@@ -180,14 +189,51 @@ export default function StudentDetailsForm() {
         yearOfStudy: studentData.yearOfStudy,
         department: studentData.department,
         branch: studentData.branch,
-        profilePhoto: previewImage, // Base64 string
+        profilePhoto: previewImage,
       };
 
       if (auth.currentUser) {
+        // Update student details in the "student" collection
         await setDoc(doc(db, "student", auth.currentUser.uid), studentToStore, {
           merge: true,
         });
         console.log("Student Data stored:", studentToStore);
+
+        // Generate group code and create a new group document
+        const groupCode = generateRandomAlphabeticCode();
+        const groupDocRef = doc(db, "groups", groupCode);
+
+        // Create the group document with the code and metadata
+        await setDoc(groupDocRef, {
+          code: groupCode,
+          createdAt: new Date(),
+          createdBy: auth.currentUser.uid,
+        });
+        console.log("Group document created with code:", groupCode);
+
+        // Prepare member data (the student is the group leader)
+        const memberData = {
+          uid: auth.currentUser.uid,
+          firstName: studentData.studentName,
+          lastName: studentData.surnameName,
+          profilePhoto: previewImage,
+          rollNo: studentData.rollNo,
+          branch: studentData.branch,
+          leader: true,
+          joinedAt: new Date(),
+        };
+
+        // Add the student as the first member in the "members" subcollection of the group
+        const memberDocRef = doc(
+          db,
+          "groups",
+          groupCode,
+          "members",
+          auth.currentUser.uid,
+        );
+        await setDoc(memberDocRef, memberData);
+        console.log("Member document added under group:", memberData);
+
         router.push("/student-dashboard");
       } else {
         alert("No authenticated user found.");
@@ -198,20 +244,19 @@ export default function StudentDetailsForm() {
     }
   };
 
+  // Dropdown options
   const yearOfStudyOptions: DropdownOption[] = [
     { value: "1st", label: "1st Year" },
     { value: "2nd", label: "2nd Year" },
     { value: "3rd", label: "3rd Year" },
     { value: "4th", label: "4th Year" },
   ];
-
   const branchOptions: DropdownOption[] = [
     { value: "CSE", label: "Computer Science" },
     { value: "ECE", label: "Electronics" },
     { value: "MECH", label: "Mechanical" },
     { value: "CIVIL", label: "Civil" },
   ];
-
   const departmentOptions: DropdownOption[] = [
     { value: "Science", label: "Science" },
     { value: "Arts", label: "Arts" },
