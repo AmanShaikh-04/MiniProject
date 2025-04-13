@@ -5,6 +5,7 @@ import Footer from "../components/footer";
 import Profile from "../components/profile";
 import RegisteredEvents from "../components/registered-events";
 import UpcomingEvents from "../components/upcoming-events";
+import Group from "../components/group";
 
 // Sample data
 const sampleEvents = [
@@ -27,6 +28,9 @@ export default function StudentDashboard() {
           <div>
             <RegisteredEvents />
           </div>
+        </div>
+        <div className="mt-6">
+          <Group />
         </div>
         <div className="mt-6">
           <UpcomingEvents />
