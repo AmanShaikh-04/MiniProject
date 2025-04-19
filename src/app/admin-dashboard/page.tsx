@@ -65,9 +65,9 @@ export default function HostDashboardPage() {
         <div className="mt-6">
           <UpcomingEvents />
         </div>
-        {/* <div className="mt-6">
+        <div className="mt-6">
           <PastEvents />
-        </div> */}
+        </div>
       </main>
       <Footer />
     </div>
