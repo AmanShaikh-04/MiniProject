@@ -946,17 +946,20 @@ const UpcomingEventsSection = () => {
       {/* MAIN EVENTS SECTION */}
       <section className="bg-gray-50 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-10">
-            Upcoming Events
-          </h2>
+          <div className="flex items-center mb-10">
+            <div className="w-2 h-8 bg-indigo-600 rounded-full mr-3"></div>
+            <h2 className="text-3xl font-bold text-gray-800">
+              Upcoming Events
+            </h2>
+          </div>
           <div className="space-y-8">
             {events.map((event) => (
               <div
                 key={event.id}
-                className="bg-white shadow-md rounded-lg p-5 border border-gray-200 flex flex-col md:flex-row items-start md:items-center gap-8"
+                className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 flex flex-col md:flex-row items-start md:items-center gap-8 hover:shadow-xl transition-shadow duration-300"
               >
                 <div className="flex-shrink-0">
-                  <div className="relative w-72 h-44 sm:w-70 sm:h-38 overflow-hidden rounded-md border border-gray-300 flex items-center justify-center bg-gray-50">
+                  <div className="relative w-72 h-44 sm:w-70 sm:h-38 overflow-hidden rounded-lg shadow-md border border-gray-100 flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
                     {event.coverImage ? (
                       <Image
                         src={event.coverImage}
@@ -982,17 +985,59 @@ const UpcomingEventsSection = () => {
                     <span className="font-medium">Organising Committee:</span>{" "}
                     {event.organisingCommittee}
                   </p>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-8 mb-2">
-                    <p className="text-gray-700">
-                      <span className="font-medium">Start Date:</span>{" "}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-8 mb-4">
+                    <p className="text-gray-700 flex items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-indigo-600 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="font-medium mr-1">Start:</span>{" "}
                       {formatDate(event.startDate)}
                     </p>
-                    <p className="text-gray-700">
-                      <span className="font-medium">End Date:</span>{" "}
+                    <p className="text-gray-700 flex items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-indigo-600 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="font-medium mr-1">End:</span>{" "}
                       {formatDate(event.endDate)}
                     </p>
-                    <p className="text-gray-700">
-                      <span className="font-medium">Timing:</span>{" "}
+                    <p className="text-gray-700 flex items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-indigo-600 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="font-medium mr-1">Time:</span>{" "}
                       {formatTime(event.startTime)}
                     </p>
                   </div>
